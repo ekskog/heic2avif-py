@@ -4,5 +4,11 @@ metadata:
   name: heic2avif-py-config
   namespace: webapps
 data:
-  PHOTOVAULT_API_URL: "http://photovault-api:3001"
+  # FastAPI configuration
+  PORT: "3000"
+  HOST: "0.0.0.0"
+  ENVIRONMENT: "production"
+  
+  # PhotoVault API callback configuration
+  PHOTOVAULT_API_URL: "http://photovault-api-service.webapps.svc.cluster.local:3001"
   CALLBACK_TIMEOUT: "30"

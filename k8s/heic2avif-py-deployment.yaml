@@ -13,16 +13,21 @@ spec:
       labels:
         app: heic2avif-py
     spec:
+      imagePullSecrets:
+      - name: ghcr-secret
       containers:
       - name: heic2avif-py
-        image: heic2avif-py:latest
+        image: ghcr.io/ekskog/heic2avif-py:latest
+        imagePullPolicy: Always
         ports:
         - containerPort: 3000
+          name: http
+        envFrom:
+        - configMapRef:
+            name: heic2avif-py-config
         env:
-        - name: PHOTOVAULT_API_URL
-          value: "http://photovault-api:3001"
-        - name: CALLBACK_TIMEOUT
-          value: "30"
+        - name: PORT
+          value: "3000"
         resources:
           requests:
             memory: "256Mi"
