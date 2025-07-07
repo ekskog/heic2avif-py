@@ -17,7 +17,7 @@ spec:
       - name: heic2avif-py
         image: heic2avif-py:latest
         ports:
-        - containerPort: 3001
+        - containerPort: 3000
         env:
         - name: PHOTOVAULT_API_URL
           value: "http://photovault-api:3001"
@@ -33,15 +33,15 @@ spec:
         readinessProbe:
           httpGet:
             path: /health
-            port: 3001
+            port: 3000
           initialDelaySeconds: 5
-          periodSeconds: 10
+          periodSeconds: 60
         livenessProbe:
           httpGet:
             path: /health
-            port: 3001
+            port: 3000
           initialDelaySeconds: 15
-          periodSeconds: 20
+          periodSeconds: 600
       restartPolicy: Always
 ---
 apiVersion: v1
@@ -54,6 +54,6 @@ spec:
     app: heic2avif-py
   ports:
   - protocol: TCP
-    port: 3001
-    targetPort: 3001
+    port: 3000
+    targetPort: 3000
   type: ClusterIP

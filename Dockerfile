@@ -21,7 +21,7 @@ COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Expose port
-EXPOSE 3001
+EXPOSE 3000
 
 # Launch FastAPI with Uvicorn
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "3001"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "3000"]
