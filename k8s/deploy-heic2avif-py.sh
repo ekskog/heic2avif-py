@@ -34,6 +34,4 @@ echo "🔍 Pod Status:"
 kubectl get pods -l app=heic2avif-py
 
 echo ""
-echo "🏥 Health Check:"
-echo "kubectl port-forward service/heic2avif-py-service 3001:3001"
-echo "curl http://localhost:3001/health"
+echo "✅ HEIC2AVIF-PY is ready to receive requests from PhotoVault API"

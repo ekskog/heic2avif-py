@@ -2,7 +2,7 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: heic2avif-py-hpa
-  namespace: default
+  namespace: webapps
 spec:
   scaleTargetRef:
     apiVersion: apps/v1

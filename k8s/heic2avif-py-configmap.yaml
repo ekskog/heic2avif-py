@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: heic2avif-py-config
-  namespace: default
+  namespace: webapps
 data:
   PHOTOVAULT_API_URL: "http://photovault-api:3001"
   CALLBACK_TIMEOUT: "30"

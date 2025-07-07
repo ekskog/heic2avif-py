@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: heic2avif-py-deployment
-  namespace: default
+  namespace: webapps
 spec:
   replicas: 2
   selector:
@@ -48,7 +48,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: heic2avif-py-service
-  namespace: default
+  namespace: webapps
 spec:
   selector:
     app: heic2avif-py
