@@ -44,7 +44,7 @@ async def health_check():
     
     # Check for avifenc
     try:
-        result = subprocess.run(["avifenc", "--version"], capture_output=True, text=True)
+        result = subprocess.run(["avifenc", "--version"], capture_output=True, text=True, timeout=5)
         if result.returncode == 0:
             capabilities["avifenc"] = True
     except:
@@ -52,11 +52,15 @@ async def health_check():
     
     # Check for ImageMagick
     try:
-        result = subprocess.run(["magick", "-version"], capture_output=True, text=True)
+        result = subprocess.run(["magick", "-version"], capture_output=True, text=True, timeout=5)
         if result.returncode == 0:
             capabilities["imagemagick"] = True
     except:
         pass
+    
+    # Only log health check if there's an issue
+    if memory["percent"] > 80 or not capabilities["pillow_heif"]:
+        print(f"[HEALTH] Service status check - Memory: {memory['percent']}%, Capabilities: {capabilities}")
     
     return {
         "status": "healthy", 
