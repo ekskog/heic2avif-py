@@ -30,11 +30,11 @@ spec:
           value: "3000"
         resources:
           requests:
-            memory: "512Mi"  # Increased from 256Mi
-            cpu: "500m"      # Increased from 250m
+            memory: "512Mi"  # Sufficient for initial allocation
+            cpu: "500m"      # Good baseline CPU
           limits:
-            memory: "2Gi"    # Increased from 1Gi
-            cpu: "2000m"     # Increased from 1000m
+            memory: "3Gi"    # Increased for large HEIC files
+            cpu: "2000m"     # Keep CPU limit for performance
         readinessProbe:
           httpGet:
             path: /health

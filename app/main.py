@@ -6,6 +6,7 @@ import psutil
 import os
 import httpx
 import asyncio
+import subprocess
 from typing import Optional
 
 app = FastAPI()
@@ -23,10 +24,45 @@ def get_memory_info():
 @app.get("/health")
 async def health_check():
     memory = get_memory_info()
+    
+    # Check if required libraries are available
+    capabilities = {
+        "pillow_heif": True,  # We import it at startup
+        "pillow_avif": False,
+        "avifenc": False,
+        "imagemagick": False
+    }
+    
+    # Check for pillow-avif support
+    try:
+        from PIL import Image
+        # Try to check AVIF support
+        if 'AVIF' in Image.registered_extensions().values():
+            capabilities["pillow_avif"] = True
+    except:
+        pass
+    
+    # Check for avifenc
+    try:
+        result = subprocess.run(["avifenc", "--version"], capture_output=True, text=True)
+        if result.returncode == 0:
+            capabilities["avifenc"] = True
+    except:
+        pass
+    
+    # Check for ImageMagick
+    try:
+        result = subprocess.run(["magick", "-version"], capture_output=True, text=True)
+        if result.returncode == 0:
+            capabilities["imagemagick"] = True
+    except:
+        pass
+    
     return {
         "status": "healthy", 
         "service": "heic2avif-py",
-        "memory": memory
+        "memory": memory,
+        "capabilities": capabilities
     }
 
 @app.post("/convert")
@@ -52,6 +88,14 @@ async def convert_image(
     heic_data = await image.read()
     heic_size_mb = round(len(heic_data) / 1024 / 1024, 2)
     
+    # Check if file is too large (safety limit)
+    max_file_size_mb = int(os.getenv("MAX_FILE_SIZE_MB", "100"))  # Default 100MB limit
+    if heic_size_mb > max_file_size_mb:
+        raise HTTPException(
+            status_code=413, 
+            detail=f"File too large: {heic_size_mb}MB exceeds limit of {max_file_size_mb}MB"
+        )
+    
     filename = originalFilename or image.filename or "image.heic"
     print(f"[CONVERT] Processing {filename}: HEIC input size = {heic_size_mb}MB")
     
@@ -72,7 +116,7 @@ async def convert_image(
         print(f"[CONVERT] Original size: {heic_size_mb}MB, AVIF size: {round(converted_size / 1024 / 1024, 2)}MB")
         print(f"[CONVERT] Compression: {compression_ratio}% size reduction")
         
-        # Clean up input data from memory
+        # Clean up input data from memory early
         del heic_data
         gc.collect()
         

@@ -24,9 +24,24 @@ def convert_heic_to_avif_variants(heic_data: bytes, original_filename: str = "im
     memory_start = get_memory_usage()
     print(f"[CONVERTER] Starting HEIC->AVIF conversion of {original_filename} - Memory: {memory_start}MB")
     
-    with tempfile.TemporaryDirectory() as tmpdir:
-        # Use Pillow + avifenc method (most reliable for HEIC)
-        return convert_heic_to_avif_pillow_method(heic_data, original_filename, tmpdir)
+    try:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Use Pillow + avifenc method (most reliable for HEIC)
+            result = convert_heic_to_avif_pillow_method(heic_data, original_filename, tmpdir)
+            
+            # Force garbage collection before returning
+            gc.collect()
+            
+            memory_end = get_memory_usage()
+            print(f"[CONVERTER] Conversion completed - Memory: {memory_end}MB (delta: {memory_end - memory_start:+.2f}MB)")
+            
+            return result
+    except Exception as e:
+        # Force garbage collection on error
+        gc.collect()
+        memory_error = get_memory_usage()
+        print(f"[CONVERTER] Conversion failed - Memory after cleanup: {memory_error}MB")
+        raise e
 
 def convert_heic_to_avif_pillow_method(heic_data: bytes, original_filename: str, tmpdir: str) -> bytes:
     """
@@ -55,9 +70,12 @@ def convert_heic_to_avif_pillow_method(heic_data: bytes, original_filename: str,
             # Save directly as AVIF (requires pillow-avif-plugin)
             heic_image.save(output_path, 'AVIF', quality=85, speed=6)
         
+        # Force garbage collection after image processing
+        gc.collect()
+        
         # Check if file was created successfully
-        if not output_path.exists():
-            print(f"[CONVERTER] Direct AVIF save failed, trying avifenc method...")
+        if not output_path.exists() or output_path.stat().st_size == 0:
+            print(f"[CONVERTER] Direct AVIF save failed (file not created or empty), trying avifenc method...")
             return convert_heic_to_avif_with_intermediate(heic_data, original_filename, tmpdir)
         
         # Read the converted AVIF file
@@ -75,6 +93,8 @@ def convert_heic_to_avif_pillow_method(heic_data: bytes, original_filename: str,
     except Exception as e:
         print(f"[CONVERTER] ❌ Direct Pillow conversion failed: {str(e)}")
         print(f"[CONVERTER] Falling back to intermediate JPEG method...")
+        # Force garbage collection before trying fallback
+        gc.collect()
         # Try intermediate conversion method
         return convert_heic_to_avif_with_intermediate(heic_data, original_filename, tmpdir)
 
@@ -105,6 +125,9 @@ def convert_heic_to_avif_with_intermediate(heic_data: bytes, original_filename: 
             # Save as high-quality JPEG
             heic_image.save(intermediate_path, 'JPEG', quality=95, optimize=True)
         
+        # Force garbage collection after first conversion
+        gc.collect()
+        
         print(f"[CONVERTER] Step 2: Converting JPEG to AVIF...")
         
         # Now convert JPEG to AVIF using avifenc
@@ -122,6 +145,11 @@ def convert_heic_to_avif_with_intermediate(heic_data: bytes, original_filename: 
             # Try final fallback with ImageMagick
             return convert_heic_to_avif_imagemagick(heic_data, original_filename, tmpdir)
         
+        # Check if output file was created and has content
+        if not output_path.exists() or output_path.stat().st_size == 0:
+            print(f"[CONVERTER] avifenc output file empty or missing, trying ImageMagick...")
+            return convert_heic_to_avif_imagemagick(heic_data, original_filename, tmpdir)
+        
         # Read the converted AVIF file
         avif_data = output_path.read_bytes()
         
@@ -136,6 +164,8 @@ def convert_heic_to_avif_with_intermediate(heic_data: bytes, original_filename: 
         
     except Exception as e:
         print(f"[CONVERTER] ❌ Intermediate conversion failed: {str(e)}")
+        # Force garbage collection before final fallback
+        gc.collect()
         # Try final fallback with ImageMagick
         return convert_heic_to_avif_imagemagick(heic_data, original_filename, tmpdir)
 
@@ -163,12 +193,17 @@ def convert_heic_to_avif_imagemagick(heic_data: bytes, original_filename: str, t
             "magick",
             str(input_path),
             "-quality", "85",  # High quality
+            "-define", "avif:speed=6",  # Speed setting for AVIF
             str(output_path)
         ], capture_output=True, text=True)
         
         if result.returncode != 0:
             print(f"[CONVERTER] ImageMagick conversion failed: {result.stderr}")
             raise RuntimeError(f"ImageMagick conversion failed: {result.stderr}")
+        
+        # Check if output file was created and has content
+        if not output_path.exists() or output_path.stat().st_size == 0:
+            raise RuntimeError("ImageMagick output file is empty or missing")
         
         # Read the converted AVIF file
         avif_data = output_path.read_bytes()

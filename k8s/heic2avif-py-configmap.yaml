@@ -12,3 +12,6 @@ data:
   # PhotoVault API callback configuration
   PHOTOVAULT_API_URL: "http://photovault-api-service.webapps.svc.cluster.local:3001"
   CALLBACK_TIMEOUT: "30"
+  
+  # File processing limits
+  MAX_FILE_SIZE_MB: "150"  # Maximum file size in MB
