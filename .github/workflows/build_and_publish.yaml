@@ -59,9 +59,9 @@ jobs:
           kubectl apply -f k8s/heic2avif-py-configmap.yaml --kubeconfig=kubeconfig.yaml --namespace=webapps
           
           # Force restart to pull latest image
-          kubectl rollout restart deployment/heic2avif-py-deployment --kubeconfig=kubeconfig.yaml --namespace=webapps
+          kubectl rollout restart deployment/heic2avif-py --kubeconfig=kubeconfig.yaml --namespace=webapps
           
           # Wait for rollout to complete
-          kubectl rollout status deployment/heic2avif-py-deployment --kubeconfig=kubeconfig.yaml --namespace=webapps --timeout=300s
+          kubectl rollout status deployment/heic2avif-py --kubeconfig=kubeconfig.yaml --namespace=webapps --timeout=300s
           
           echo "✅ HEIC2AVIF converter deployment completed successfully"
