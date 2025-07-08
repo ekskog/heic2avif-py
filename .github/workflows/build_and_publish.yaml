@@ -17,12 +17,6 @@ jobs:
       - name: 🧾 Checkout code
         uses: actions/checkout@v4
 
-      - name: Set Environment Variables
-        run: |
-          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-          echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
-          echo "IMAGE_NAME=ghcr.io/ekskog/heic2avif-py" >> $GITHUB_ENV
-
       - name: 🔧 Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -34,22 +28,16 @@ jobs:
           password: ${{ secrets.EKPAT_TOKEN }}
 
       - name: 🏗️ Build and Push
-        run: |
-          IMAGE_TAG=${{ env.IMAGE_NAME }}:${{ env.SHORT_SHA }}
-          echo "Building and pushing: $IMAGE_TAG"
-          docker buildx build \
-            --platform linux/amd64 \
-            --tag $IMAGE_TAG \
-            --tag ${{ env.IMAGE_NAME }}:latest \
-            --push \
-            --progress=plain \
-            .
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/ekskog/heic2avif-py:latest
 
       - name: ✅ Verify Image Push
         run: |
-          IMAGE_TAG=${{ env.IMAGE_NAME }}:${{ env.SHORT_SHA }}
-          echo "Verifying image exists: $IMAGE_TAG"
-          docker manifest inspect $IMAGE_TAG
+          echo "Verifying image exists: ghcr.io/ekskog/heic2avif-py:latest"
+          docker manifest inspect ghcr.io/ekskog/heic2avif-py:latest
 
       - name: ⚙️ Set Up KUBECONFIG
         run: |
@@ -64,15 +52,14 @@ jobs:
 
       - name: 🚀 Deploy to Kubernetes
         run: |
-          IMAGE_TAG=${{ env.IMAGE_NAME }}:${{ env.SHORT_SHA }}
-          echo "🚀 Deploying HEIC2AVIF converter: $IMAGE_TAG"
+          echo "🚀 Deploying HEIC2AVIF converter with latest image"
           
-          # Update the deployment YAML with the current image tag
-          sed -i "s|image: ghcr.io/ekskog/heic2avif-py:.*|image: $IMAGE_TAG|g" k8s/heic2avif-py-deployment.yaml
-          
-          # Apply the updated deployment YAML
+          # Apply the deployment YAML (using latest tag as before)
           kubectl apply -f k8s/heic2avif-py-deployment.yaml --kubeconfig=kubeconfig.yaml --namespace=webapps
           kubectl apply -f k8s/heic2avif-py-configmap.yaml --kubeconfig=kubeconfig.yaml --namespace=webapps
+          
+          # Force restart to pull latest image
+          kubectl rollout restart deployment/heic2avif-py-deployment --kubeconfig=kubeconfig.yaml --namespace=webapps
           
           # Wait for rollout to complete
           kubectl rollout status deployment/heic2avif-py-deployment --kubeconfig=kubeconfig.yaml --namespace=webapps --timeout=300s
