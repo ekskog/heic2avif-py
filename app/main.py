@@ -28,19 +28,8 @@ async def health_check():
     # Check if required libraries are available
     capabilities = {
         "pillow_heif": True,  # We import it at startup
-        "pillow_avif": False,
-        "avifenc": False,
-        "imagemagick": False
+        "avifenc": False
     }
-    
-    # Check for pillow-avif support
-    try:
-        from PIL import Image
-        # Try to check AVIF support
-        if 'AVIF' in Image.registered_extensions().values():
-            capabilities["pillow_avif"] = True
-    except:
-        pass
     
     # Check for avifenc
     try:
@@ -50,20 +39,15 @@ async def health_check():
     except:
         pass
     
-    # Check for ImageMagick
-    try:
-        result = subprocess.run(["magick", "-version"], capture_output=True, text=True, timeout=5)
-        if result.returncode == 0:
-            capabilities["imagemagick"] = True
-    except:
-        pass
+    # Determine overall health status
+    is_healthy = capabilities["pillow_heif"] and capabilities["avifenc"]
     
     # Only log health check if there's an issue
-    if memory["percent"] > 80 or not capabilities["pillow_heif"]:
+    if memory["percent"] > 80 or not is_healthy:
         print(f"[HEALTH] Service status check - Memory: {memory['percent']}%, Capabilities: {capabilities}")
     
     return {
-        "status": "healthy", 
+        "status": "healthy" if is_healthy else "unhealthy", 
         "service": "heic2avif-py",
         "memory": memory,
         "capabilities": capabilities

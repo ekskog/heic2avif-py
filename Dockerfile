@@ -1,14 +1,10 @@
 FROM python:3.11-slim
 
-# System dependencies for HEIC/HEIF and AVIF processing
-RUN apt-get update && \
-    apt-get install -y \
+# System dependencies for HEIC/HEIF and AVIF processing (minimal set)
+RUN apt-get update && apt-get install -y \
     libheif-dev \
     libavif-bin \
-    imagemagick \
-    libmagickwand-dev \
-    pkg-config \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
@@ -19,6 +15,9 @@ COPY requirements.txt /app/requirements.txt
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Clean up
+RUN apt-get autoremove -y && apt-get clean
 
 # Expose port
 EXPOSE 3000
